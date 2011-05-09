@@ -1,9 +1,9 @@
+# Maxad (68,8k):
+# D-cache :  2way, 8 blocks, 16 words/block, LRU, WB
+# I-cache : Direct, LRU, 8 blocks, 4 words/block
+# Memory  : 5 First word, 1 Following words, Write buffer 1 word
 #
-# D-cache :  2way, 16 blocks, 8 words/block, LRU, WB
-# I-cache : Direct, LRU, 8 blocks, 8 words/block
-# Memory  : 4 First word, 1 Following words, Write buffer 8 words
-#
-# Budget: 
+# Budget (72,5k):  
 # I-cache : Direct, LRU, 8 Blocks, 4 Words/block
 # D-cache : 2-way, 8 blocks, 8 words/block, LRU, WB
 # Memory  : 5 First word, 1 Following Words, Write buffer 1 word
