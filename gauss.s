@@ -28,9 +28,6 @@ main:
 ## FREDRIKS KOD  
 ################################################################################
 
-    ## Initialize pivot loop var, k
-       add         $s0, $0, $0       # k = 0
-
     ## Initialize some constants
         sll        $t3, $a1, 2       # t3 = 4*N (number of bytes per row)
         addi       $t4, $t3, 4       # t4 = number of bytes in one row plus one step
@@ -38,13 +35,14 @@ main:
         l.s        $f8, const0       # f0 = 0.0 (float constant)
         add        $s3, $a0, $0      # s3 = A (s3 will hold the address to A[k][k])
 		addi	   $s4, $a0, -4		 # s4 = A (s4 will hold 'next line' address)
+		mul		   $s5, $t3, $a1	 # s5 = total number of bytes in matrix	
+		add		   $s5, $s5, $a0	 # s5 = address to end of matrix
 		
 L1:      
     ## Getelem A[k][k]
         l.s     $f0, ($s3)           # f0 = contents of A[k][k]
 
         div.s   $f2, $f6, $f0        # f2 = 1 / A[k][k], multiplication is cheaper than division!
-        #addi    $s2, $s0, 1          # j = k + 1
         addi    $t0, $s3, 4          # t0 = address to A[k][j]...
 		add		$s4, $s4, $t3		 # step forward 'next row' address one row (obviously)
 
@@ -54,16 +52,13 @@ L2:
 
         mul.s   $f0, $f0, $f2        # f0 = A[k][j] * (1 / A[k][k])
         s.s     $f0, ($t0)           # A[k][j] = f2
-     
-        #addi    $s2, $s2, 1          # j++
-        #blt     $s2, $a1, L2         # branch if j < N
+    
 		blt		$t0, $s4, L2		 # branch if not on next row (rowerflow!)
         addi    $t0, $t0, 4          # step forward A[k][j] one row
 
         s.s     $f6, ($s3)           # A[k][k] = 1.0 (pivot element)
 
         ## Prepare for i loop
-        addi    $s1, $s0, 1          # i = k + 1
         add     $t0, $s3, $t3        # t0 = address to A[i][k]
 
 L3:
@@ -72,7 +67,6 @@ L3:
 
         addi    $t1, $s3, 4          # t1 = address to A[k][j]
         addi    $t2, $t0, 4          # t2 = address to A[i][j]
-        addi    $s2, $s0, 1          # j = k + 1
    
 L4:
     ## Getelem A[k][j]
@@ -84,19 +78,16 @@ L4:
         sub.s   $f4, $f4, $f2        # f4 = A[i][j] - (A[i][k] * A[k][j])
         s.s     $f4, ($t2)           # Store away f4 in A[i][j]
 
-        addi    $s2, $s2, 1          # j++
         addi    $t2, $t2, 4          # step forward A[i][j] one column
-        blt     $s2, $a1, L4         # branch if j < N
+		blt		$t1, $s4, L4		 # branch on rowerflow
         addi    $t1, $t1, 4          # step forward A[k][j] one column DELAY SLOT
 		
         s.s     $f8, ($t0)           # A[i][k] = 0.0                    
 	
-        addi    $s1, $s1, 1          # i++
-        blt     $s1, $a1, L3         # branch if i < N
+		blt		$t0, $s5, L3		 # Gone overboard = done looping!
         add     $t0, $t0, $t3        # step forward A[i][k] one row DELAY SLOT
        
-        addi    $s0, $s0, 1          # k++
-		blt     $s0, $a1, L1         # branch if k < N
+		blt     $s3, $s5, L1         # Gone overboard = done looping!
         add     $s3, $s3, $t4        # step forward A[k][k] one row and column DELAY SLOT
 
 ################################################################################
