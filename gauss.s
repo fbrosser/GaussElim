@@ -45,6 +45,7 @@ L1:
         l.s     $f0, ($s3)           # f0 = contents of A[k][k]	
         div.s   $f2, $f6, $f0        # f2 = 1 / A[k][k], multiplication is cheaper than division!
 		addi    $t0, $s3, 4          # t0 = address to A[k][j]...
+
 L2:  
     ## Getelem A[k][j]
         l.s     $f0, ($t0)           # f0 = contents of A[k][j]
@@ -52,11 +53,11 @@ L2:
         mul.s   $f0, $f0, $f2        # f0 = A[k][j] * (1 / A[k][k])
         s.s     $f0, ($t0)           # A[k][j] = f2
     
-		blt		$t0, $s4, L2		 # branch if not on next row (rowerflow!)
+		bne		$t0, $s4, L2		 # branch if not on next row (rowerflow!)
 		addi    $t0, $t0, 4          # step forward A[k][j] one column !DELAY SLOT!
 
         s.s     $f6, ($s3)           # A[k][k] = 1.0 (pivot element)
-
+		
         add     $t0, $s3, $t3        # t0 = address to A[i][k]
 
 L3:
@@ -78,7 +79,7 @@ L4:
         s.s     $f4, ($t2)           # Store away f4 in A[i][j]
 
         addi    $t2, $t2, 4          # step forward A[i][j] one column
-		blt		$t1, $s4, L4		 # branch on rowerflow
+		bne		$t1, $s4, L4		 # branch on rowerflow
 		addi    $t1, $t1, 4          # step forward A[k][j] one column !DELAY SLOT!                
 
 		s.s     $f8, ($t0)           # A[i][k] = 0.0
@@ -86,7 +87,6 @@ L4:
 		add     $t0, $t0, $t3        # step forward A[i][k] one row
 		blt		$t0, $s5, L3		 # Gone overboard = done looping!
 		nop
-		#s.s     $f8, ($t0)           # A[i][k] = 0.0
 		
 		add     $s3, $s3, $t4        # step forward A[k][k] one row and column
 		blt     $s3, $s6, L1         # Gone overboard = done looping!
