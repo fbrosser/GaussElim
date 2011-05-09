@@ -18,11 +18,11 @@
         .text                      
         .globl    main              
 main:
-        la        $4, matrix_4x4        # a0 = A (base address of matrix)
-        li        $5, 4                # a1 = N (number of elements per row)
+        la        $4, matrix_24x24        # a0 = A (base address of matrix)
+        li        $5, 24                # a1 = N (number of elements per row)
                                     # <debug>
-        jal     print_matrix        # print matrix before elimination
-        nop                            # </debug>
+        #jal     print_matrix        # print matrix before elimination
+        #nop                            # </debug>
 
 ################################################################################
 ## FREDRIKS KOD  
@@ -36,8 +36,8 @@ main:
         add        $s3, $a0, $0      # s3 = A (s3 will hold the address to A[k][k])
 		addi	   $s4, $a0, -4		 # s4 = A (s4 will hold 'next line' address)
 		mul		   $s5, $t3, $a1	 # s5 = total number of bytes in matrix	
-		add		   $s5, $s5, $a0	 # s5 = address to end of matrix
-		
+		add		   $s5, $s5, $a0	 # s5 = address to end of matrix ('overboard')
+
 L1:      
     ## Getelem A[k][k]
         l.s     $f0, ($s3)           # f0 = contents of A[k][k]
@@ -53,12 +53,12 @@ L2:
         mul.s   $f0, $f0, $f2        # f0 = A[k][j] * (1 / A[k][k])
         s.s     $f0, ($t0)           # A[k][j] = f2
     
+		
 		blt		$t0, $s4, L2		 # branch if not on next row (rowerflow!)
-        addi    $t0, $t0, 4          # step forward A[k][j] one row
+		addi    $t0, $t0, 4          # step forward A[k][j] one column !DELAY SLOT!
 
         s.s     $f6, ($s3)           # A[k][k] = 1.0 (pivot element)
 
-        ## Prepare for i loop
         add     $t0, $s3, $t3        # t0 = address to A[i][k]
 
 L3:
@@ -67,7 +67,7 @@ L3:
 
         addi    $t1, $s3, 4          # t1 = address to A[k][j]
         addi    $t2, $t0, 4          # t2 = address to A[i][j]
-   
+ 
 L4:
     ## Getelem A[k][j]
         l.s     $f2, ($t1)           # f2 = contents of A[k][j]
@@ -80,22 +80,24 @@ L4:
 
         addi    $t2, $t2, 4          # step forward A[i][j] one column
 		blt		$t1, $s4, L4		 # branch on rowerflow
-        addi    $t1, $t1, 4          # step forward A[k][j] one column DELAY SLOT
+		addi    $t1, $t1, 4          # step forward A[k][j] one column !DELAY SLOT!
 		
         s.s     $f8, ($t0)           # A[i][k] = 0.0                    
-	
+
+		add     $t0, $t0, $t3        # step forward A[i][k] one row DELAY SLOT
 		blt		$t0, $s5, L3		 # Gone overboard = done looping!
-        add     $t0, $t0, $t3        # step forward A[i][k] one row DELAY SLOT
+        nop
        
+		add     $s3, $s3, $t4        # step forward A[k][k] one row and column DELAY SLOT
 		blt     $s3, $s5, L1         # Gone overboard = done looping!
-        add     $s3, $s3, $t4        # step forward A[k][k] one row and column DELAY SLOT
+        nop
 
 ################################################################################
 ## SLUT AV FREDRIKS KOD  
 ################################################################################
 
-        jal     print_matrix        # print matrix after elimination
-        nop                         # </debug>
+        #jal     print_matrix        # print matrix after elimination
+        #nop                         # </debug>
 
         li       $2, 10              # specify exit system call
         syscall                      # exit program
