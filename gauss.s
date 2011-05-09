@@ -18,11 +18,11 @@
         .text                      
         .globl    main              
 main:
-        la        $4, matrix_24x24        # a0 = A (base address of matrix)
-        li        $5, 24                # a1 = N (number of elements per row)
+        la        $4, matrix_4x4        # a0 = A (base address of matrix)
+        li        $5, 4                # a1 = N (number of elements per row)
                                     # <debug>
-        #jal     print_matrix        # print matrix before elimination
-        #nop                            # </debug>
+        jal     print_matrix        # print matrix before elimination
+        nop                            # </debug>
 
 ################################################################################
 ## FREDRIKS KOD  
@@ -37,14 +37,16 @@ main:
         l.s        $f6, const1       # f1 = 1.0 (float constant)
         l.s        $f8, const0       # f0 = 0.0 (float constant)
         add        $s3, $a0, $0      # s3 = A (s3 will hold the address to A[k][k])
-               
+		addi	   $s4, $a0, -4		 # s4 = A (s4 will hold 'next line' address)
+		
 L1:      
     ## Getelem A[k][k]
         l.s     $f0, ($s3)           # f0 = contents of A[k][k]
 
         div.s   $f2, $f6, $f0        # f2 = 1 / A[k][k], multiplication is cheaper than division!
-        addi    $s2, $s0, 1          # j = k + 1
+        #addi    $s2, $s0, 1          # j = k + 1
         addi    $t0, $s3, 4          # t0 = address to A[k][j]...
+		add		$s4, $s4, $t3		 # step forward 'next row' address one row (obviously)
 
 L2:  
     ## Getelem A[k][j]
@@ -53,8 +55,9 @@ L2:
         mul.s   $f0, $f0, $f2        # f0 = A[k][j] * (1 / A[k][k])
         s.s     $f0, ($t0)           # A[k][j] = f2
      
-        addi    $s2, $s2, 1          # j++
-        blt     $s2, $a1, L2         # branch if j < N
+        #addi    $s2, $s2, 1          # j++
+        #blt     $s2, $a1, L2         # branch if j < N
+		blt		$t0, $s4, L2		 # branch if not on next row (rowerflow!)
         addi    $t0, $t0, 4          # step forward A[k][j] one row
 
         s.s     $f6, ($s3)           # A[k][k] = 1.0 (pivot element)
@@ -93,15 +96,15 @@ L4:
         add     $t0, $t0, $t3        # step forward A[i][k] one row DELAY SLOT
        
         addi    $s0, $s0, 1          # k++
-        blt     $s0, $a1, L1         # branch if k < N
+		blt     $s0, $a1, L1         # branch if k < N
         add     $s3, $s3, $t4        # step forward A[k][k] one row and column DELAY SLOT
 
 ################################################################################
 ## SLUT AV FREDRIKS KOD  
 ################################################################################
 
-        #jal     print_matrix        # print matrix after elimination
-        #nop                         # </debug>
+        jal     print_matrix        # print matrix after elimination
+        nop                         # </debug>
 
         li       $2, 10              # specify exit system call
         syscall                      # exit program
