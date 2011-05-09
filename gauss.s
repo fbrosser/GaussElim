@@ -20,7 +20,7 @@
 main:
         la        $4, matrix_24x24        # a0 = A (base address of matrix)
         li        $5, 24                # a1 = N (number of elements per row)
-                                    # <debug>
+                                      # <debug>
         #jal     print_matrix        # print matrix before elimination
         #nop                            # </debug>
 
@@ -31,8 +31,8 @@ main:
     ## Initialize some constants
         sll        $t3, $a1, 2       # t3 = 4*N (number of bytes per row)
         addi       $t4, $t3, 4       # t4 = number of bytes in one row plus one step
+		l.s        $f8, const0       # f0 = 0.0 (float constant)
         l.s        $f6, const1       # f1 = 1.0 (float constant)
-        l.s        $f8, const0       # f0 = 0.0 (float constant)
         add        $s3, $a0, $0      # s3 = A (s3 will hold the address to A[k][k])
 		addi	   $s4, $a0, -4		 # s4 = A (s4 will hold 'next line' address)
 		mul		   $s5, $t3, $a1	 # s5 = total number of bytes in matrix	
@@ -53,7 +53,6 @@ L2:
         mul.s   $f0, $f0, $f2        # f0 = A[k][j] * (1 / A[k][k])
         s.s     $f0, ($t0)           # A[k][j] = f2
     
-		
 		blt		$t0, $s4, L2		 # branch if not on next row (rowerflow!)
 		addi    $t0, $t0, 4          # step forward A[k][j] one column !DELAY SLOT!
 
@@ -65,12 +64,13 @@ L3:
     ## Getelem A[i][k]
         l.s     $f0, ($t0)           # f0 = contents of A[i][k]
 
-        addi    $t1, $s3, 4          # t1 = address to A[k][j]
+		addi    $t1, $s3, 4          # t1 = address to A[k][j]
         addi    $t2, $t0, 4          # t2 = address to A[i][j]
- 
+
 L4:
     ## Getelem A[k][j]
         l.s     $f2, ($t1)           # f2 = contents of A[k][j]
+
     ## Getelem A[i][j]
         l.s     $f4, ($t2)           # f4 = contents of A[i][j]
 
@@ -84,11 +84,11 @@ L4:
 		
         s.s     $f8, ($t0)           # A[i][k] = 0.0                    
 
-		add     $t0, $t0, $t3        # step forward A[i][k] one row DELAY SLOT
+		add     $t0, $t0, $t3        # step forward A[i][k] one row
 		blt		$t0, $s5, L3		 # Gone overboard = done looping!
         nop
-       
-		add     $s3, $s3, $t4        # step forward A[k][k] one row and column DELAY SLOT
+
+		add     $s3, $s3, $t4        # step forward A[k][k] one row and column
 		blt     $s3, $s5, L1         # Gone overboard = done looping!
         nop
 
@@ -160,13 +160,12 @@ loop_s0:
 
 ### Data segment
         .data
-      
 ### String constants
 spaces:
         .asciiz "   "               # spaces to insert between numbers
 newline:
         .asciiz "\n"                  # newline
-
+        
 ## Input matrix: (4x4) ##
 matrix_4x4:  
         .float 57.0
