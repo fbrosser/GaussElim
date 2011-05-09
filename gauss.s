@@ -1,38 +1,58 @@
-# Maxad (68,8k):
-# D-cache :  2way, 8 blocks, 16 words/block, LRU, WB
-# I-cache : Direct, LRU, 8 blocks, 4 words/block
-# Memory  : 5 First word, 1 Following words, Write buffer 1 word
+# Maxad CC (68.470 CC):
+# Stock CPU (@ 85 MHz) = 2 C$
+# D-cache :  2way, 8 blocks, 16 words/block, LRU, WB = 0.5 C$
+# I-cache : Direct, LRU, 8 blocks, 4 words/block = 0 C$
+# Memory  : 5 First word, 1 Following words, Write buffer 1 words = 0.8 C$
+# Total usC$ = (3.3 * 68470) / 85 = 2658.25 usC$
 #
-# Budget (72,5k):  
-# I-cache : Direct, LRU, 8 Blocks, 4 Words/block
-# D-cache : 2-way, 8 blocks, 8 words/block, LRU, WB
-# Memory  : 5 First word, 1 Following Words, Write buffer 1 word
+# Budget (73.665 CC):  
+# Stock CPU (@ 90 MHz) = 2 C$
+# I-cache : Direct, LRU, 8 Blocks, 4 Words/block = 0 C$
+# D-cache : 2-way, 8 blocks, 8 words/block, LRU, WB = 0.25 C$
+# Memory  : 5 First word, 1 Following Words, Write buffer 0 word = 0.75 C$
+# Total usC$ = (3 * 73665) / 90 = 2455.5 usC$
 # 
+# Ovan, fast med "optimerad laddning av argument": 73656 CC => 2455.2 usC$
+#
 # Gausselimination  EDA331
 # Fredrik Brosser
-# version 2011-05-06
-
+# 2011-05-09
+#
 #include <iregdef.h>
-
+#
 ### Text segment
         .text                      
         .globl    main              
 main:
-        la        $4, matrix_24x24        # a0 = A (base address of matrix)
-        li        $5, 24                # a1 = N (number of elements per row)
-                                      # <debug>
+    ## Nedan: standard-laddning av argument
+        la        $4, matrix_24x24   # a0 = A (base address of matrix)
+        li        $5, 24             # a1 = N (number of elements per row)
+		lui	      $s7, 4097		     # s7 = address to data segment
+
+	## Nedan: optimerad laddning av argument
+		#lui	    $s7, 4097		     # s7 = address to data segment
+		#ori 	$4, $23, 8			 # a0 = A
+		#addi	$5, $0, 24			 # a1 = N
+
         #jal     print_matrix        # print matrix before elimination
-        #nop                            # </debug>
+        #nop                         # </debug>
 
 ################################################################################
 ## FREDRIKS KOD  
+################################################################################
+## Word is 010001 00000 00110 00010 10000 000011 = 1 141 249 027
+#D1:		nop							 # Dummy instruction to be replaced
 ################################################################################
 
     ## Initialize some constants
         sll        $t3, $a1, 2       # t3 = 4*N (number of bytes per row)
         addi       $t4, $t3, 4       # t4 = number of bytes in one row plus one step
-		l.s        $f8, const0       # f0 = 0.0 (float constant)
-        l.s        $f6, const1       # f1 = 1.0 (float constant)
+		#l.s        $f8, const0      # f0 = 0.0 (float constant)
+        #l.s        $f6, const1      # f1 = 1.0 (float constant)
+		#lui $s7, 4097				 # Load address to data segment
+		lwc1 $f8, ($s7)				 # f0 = 0.0 (float constant)
+		lwc1 $f6, 4($s7)			 # f1 = 1.0 (float constant)
+
         add        $s3, $a0, $0      # s3 = A (s3 will hold the address to A[k][k])
 		addi	   $s4, $a0, -4		 # s4 = A (s4 will hold 'next line' address)
 
@@ -90,7 +110,7 @@ L4:
 		nop
 		
 		add     $s3, $s3, $t4        # step forward A[k][k] one row and column
-		blt     $s3, $s6, L1         # Gone overboard = done looping!
+		blt     $s3, $s6, L1         # Gone overboard = done looping!			
 		nop
 
 		add		$s4, $s4, $t3		 # step forward 'next row' address one row (obviously)
@@ -170,34 +190,6 @@ loop_s0:
 
 ### Data segment
         .data
-### String constants
-spaces:
-        .asciiz "   "               # spaces to insert between numbers
-newline:
-        .asciiz "\n"                  # newline
-        
-## Input matrix: (4x4) ##
-matrix_4x4:  
-        .float 57.0
-        .float 20.0
-        .float 34.0
-        .float 59.0
-      
-        .float 104.0
-        .float 19.0
-        .float 77.0
-        .float 25.0
-      
-        .float 55.0
-        .float 14.0
-        .float 10.0
-        .float 43.0
-      
-        .float 31.0
-        .float 41.0
-        .float 108.0
-        .float 59.0
-
 const0:
         .float 0.0
 const1:
@@ -805,4 +797,31 @@ matrix_24x24:
         .float     24.00
         .float     24.00
 
+### String constants
+spaces:
+        .asciiz "   "               # spaces to insert between numbers
+newline:
+        .asciiz "\n"                  # newline
+        
+## Input matrix: (4x4) ##
+matrix_4x4:  
+        .float 57.0
+        .float 20.0
+        .float 34.0
+        .float 59.0
+      
+        .float 104.0
+        .float 19.0
+        .float 77.0
+        .float 25.0
+      
+        .float 55.0
+        .float 14.0
+        .float 10.0
+        .float 43.0
+      
+        .float 31.0
+        .float 41.0
+        .float 108.0
+        .float 59.0
 ### End of data segment
